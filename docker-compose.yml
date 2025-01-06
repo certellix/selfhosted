@@ -1,0 +1,93 @@
+services:
+  app:
+    restart: unless-stopped
+    image: certellix/appliance:latest
+    expose:
+      - "80"
+      - "443" 
+    command: ["./web"]
+    environment:
+      - PREFIX_DIR=/app/data
+      - CONFIG_FILE=/app/data/.env
+      - DB_TYPE=sqlite
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USERNAME=certellix_user
+      - DB_PASSWORD=2JXbyfCFMatLGrTcFrxaHTWW
+      - DB_NAME=certellix
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DATABASE=0
+      - SESSION_SECRET=K4t8ztwvDKecmn5duwrandzA
+      - TLS_CERT_FILE=./data/certs/server.crt
+      - TLS_KEY_FILE=./data/certs/server.key
+      - TLS_ENABLED=0
+      - TLS_CA_FILE=./data/certs/ca.crt
+      - SMTP_HOST=localhost
+      - SMTP_PORT=25
+      - SMTP_USERNAME=certellix_user
+      - SMTP_PASSWORD=ZAgU76MRPXMxTe8BrYp2gP2r
+      - SMTP_FROM_EMAIL=noreply@localhost
+      - SMTP_USE_TLS=1
+      - LOG_FILE=
+      - SERVER_NAME=localhost
+      - SERVER_HOST=0.0.0.0 
+      - SERVER_PORT=80
+      - TLS_DOMAIN=localhost
+      - TLS_PORT=443
+      - ADMIN_USERNAME=admin@localhost
+      - ADMIN_PASSWORD=GArqzTvZmjRcYSJWCdC5YueB
+      - SKIP_UPDATES=true
+    volumes:
+      - /app/data/data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+    ports:
+      - 80:80
+      - 443:443
+
+  db:
+    restart: unless-stopped
+    image: percona/percona-server:8.0
+    command: mysqld
+    environment:
+      - MYSQL_ROOT_PASSWORD=q66paNvRGaMhPEvuaAxRPMav
+      - MYSQL_DATABASE=certellix
+      - MYSQL_USER=certellix_user
+      - MYSQL_PASSWORD=J7bdYtsqqUgFESEFkQ6MTPTE
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  redis:
+    restart: unless-stopped
+    image: redis:6
+    command: redis-server
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  app-network:
+    driver: bridge
